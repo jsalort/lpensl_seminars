@@ -1,5 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
+<p><a href="{{ url_for('calendar', feed_name=feed_name) }}">S'abonner au calendrier (ics)</a></p>
+
 <h3>Upcoming events</h3>
 <ul class="list-group">
 {% for e in upcoming_events %}
