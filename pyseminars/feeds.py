@@ -6,6 +6,7 @@ This submodule parse the RSS feeds
 
 from configparser import ConfigParser
 from pprint import pprint
+from datetime import timedelta
 from importlib_resources import open_text
 
 import feedparser
@@ -49,8 +50,12 @@ class SeminarFeed:
                     print('Downloading ics')
                     r = requests.get(ics_url)
                     item_cal = Calendar(r.text)
-                    cache.save_events(now(), self.feed_name,
-                                      ics_url, item_cal.events)
+                    for e in item_cal.events:
+                        if e.duration > timedelta(hours=10):
+                            item_cal.events.remove(e)
+                    if len(item_cal.events) > 0:
+                        cache.save_events(now(), self.feed_name,
+                                          ics_url, item_cal.events)
                     events = item_cal.events
                 else:
                     print('Using cached ics')
@@ -63,8 +68,7 @@ class SeminarFeed:
 feeds = [SeminarFeed(name) for name in config.sections()]
 
 if __name__ == '__main__':
-    cal = feeds[0].generate_calendar()
-    cal2 = feeds[1].generate_calendar()
+    cal = feeds[2].generate_calendar()
     print('Cal\n' + '-'*3)
     pprint(cal.events)
-    #cache.print_content()
+    cache.print_content()
