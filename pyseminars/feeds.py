@@ -19,7 +19,6 @@ from pyseminars.cache import Cache, now
 config = ConfigParser()
 with open_text(pyseminars, 'feeds_lpensl.ini') as f:
     config.read_file(f)
-cache = Cache()
 
 
 class SeminarFeed:
@@ -38,7 +37,7 @@ class SeminarFeed:
     def __str__(self):
         return self.feed_name
 
-    def generate_calendar(self):
+    def generate_calendar(self, cache):
         c = cache.get_calendar(self.feed_name)
         if cache.feed_needs_updating(self.feed_name):
             print('Downloading RSS feed')
@@ -70,7 +69,8 @@ class SeminarFeed:
 feeds = [SeminarFeed(name) for name in config.sections()]
 
 if __name__ == '__main__':
-    cal = feeds[2].generate_calendar()
-    print('Cal\n' + '-'*3)
-    pprint(cal.events)
-    cache.print_content()
+    with Cache() as cache:
+        cal = feeds[2].generate_calendar(cache)
+        print('Cal\n' + '-'*3)
+        pprint(cal.events)
+        cache.print_content()

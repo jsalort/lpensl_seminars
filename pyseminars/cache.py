@@ -106,16 +106,27 @@ class CachedEvent(Base):
                            transparent=event.transparent)
 
 
+engine = create_engine(config['Database']['dburl'], echo=False)
+
+
 class Cache:
 
     def __init__(self):
-        self.engine = create_engine(config['Database']['dburl'], echo=False)
-        if not self.engine.dialect.has_table(self.engine, 'events'):
-            CachedEvent.metadata.create_all(self.engine)
-        if not self.engine.dialect.has_table(self.engine, 'feeds'):
-            CachedFeed.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()  # Only once in the program
+        if not engine.dialect.has_table(engine, 'events'):
+            CachedEvent.metadata.create_all(engine)
+        if not engine.dialect.has_table(engine, 'feeds'):
+            CachedFeed.metadata.create_all(engine)
+        self.Session = sessionmaker(bind=engine)
+
+    def __enter__(self):
+        self.session = self.Session()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        try:
+            self.session.commit()
+        finally:
+            self.session.close()
 
     def update_feed_download_date(self, feed_name, download_date):
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)

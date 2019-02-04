@@ -7,13 +7,15 @@ Flask app serving the calendar
 import os
 from flask import Flask, Response, abort, render_template, redirect, url_for
 from flask_moment import Moment
-from pyseminars.feeds import feeds, now
+from pyseminars.feeds import feeds
+from pyseminars.cache import Cache, now
 
 root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 app = Flask(__name__,
             template_folder=os.path.join(root, 'templates'),
             static_folder=os.path.join(root, 'static'))
 moment = Moment(app)
+
 
 @app.route("/<feed_name>.ics")
 def calendar(feed_name):
@@ -22,7 +24,8 @@ def calendar(feed_name):
             break
     else:
         return abort(404)
-    c = f.generate_calendar()
+    with Cache() as cache:
+        c = f.generate_calendar(cache)
     return Response(str(c), mimetype='text/calendar')
 
 
@@ -33,7 +36,8 @@ def feed(feed_name):
             break
     else:
         return abort(404)
-    c = f.generate_calendar()
+    with Cache() as cache:
+        c = f.generate_calendar(cache)
     th = now()
     past_events = {e for e in c.events if e.end < th and (e.description or e.name)}
     upcoming_events = {e for e in c.events if e.end >= th and (e.description or e.name)}
