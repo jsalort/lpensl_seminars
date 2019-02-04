@@ -123,6 +123,7 @@ class Cache:
             raise RuntimeError('feed_name is not unique')
         cached_feed = cached_feed.first()
         cached_feed.feed_last_download = download_date
+        self.session.commit()
 
     def save_events(self, download_date, feed_name, ics_url, events):
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
