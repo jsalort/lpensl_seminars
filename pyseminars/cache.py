@@ -114,16 +114,15 @@ class Cache:
             CachedEvent.metadata.create_all(self.engine)
         if not self.engine.dialect.has_table(self.engine, 'feeds'):
             CachedFeed.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()  # Only once in the program
 
     def save_events(self, download_date, feed_name, ics_url, events):
-        session = self.Session()
-
-        cached_feed = session.query(CachedFeed).filter_by(feed_name=feed_name)
+        cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
         if cached_feed.count() == 0:
             cached_feed = CachedFeed(feed_last_download=download_date,
                                      feed_name=feed_name)
-            session.add(cached_feed)
+            self.session.add(cached_feed)
         elif cached_feed.count() > 1:
             raise RuntimeError('feed_name is not unique')
         else:
@@ -131,13 +130,13 @@ class Cache:
             cached_feed.feed_last_download = download_date
 
         for event in events:
-            cached_event = session.query(CachedEvent).filter_by(uid=event.uid)
+            cached_event = self.session.query(CachedEvent).filter_by(uid=event.uid)
             if cached_event.count() == 0:
                 cached_event = CachedEvent.from_ics_event(download_date,
                                                           cached_feed.feed_id,
                                                           ics_url,
                                                           event)
-                session.add(cached_event)
+                self.session.add(cached_event)
             elif cached_event.count() > 1:
                 raise RuntimeError('event uid is not unique')
             else:
@@ -153,7 +152,7 @@ class Cache:
                 cached_event.location = event.location
                 cached_event.url = event.url
                 cached_event.transparent = event.transparent
-        session.commit()
+        self.session.commit()
 
     def get_events_from_source_url(self, ics_url):
         """
@@ -161,8 +160,7 @@ class Cache:
         Returns None if the cache is out of date, or if specified event is not
         in cache
         """
-        session = self.Session()
-        q = session.query(CachedEvent).filter_by(event_ics_source=ics_url)
+        q = self.session.query(CachedEvent).filter_by(event_ics_source=ics_url)
         if q.count() == 0:
             return None
         cached_events = q.all()
@@ -175,22 +173,20 @@ class Cache:
         """
         Returns Calendar object with all cached events
         """
-        session = self.Session()
-        feed = session.query(CachedFeed).filter_by(feed_name=feed_name)
+        feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
         if feed.count() > 1:
             raise RuntimeError('feed_name is not unique')
         if feed.count() == 0:
             return Calendar()  # empty calendar
         feed = feed.first()
         c = Calendar()
-        q = session.query(CachedEvent).filter_by(event_feed_id=feed.feed_id).order_by(CachedEvent.begin)
+        q = self.session.query(CachedEvent).filter_by(event_feed_id=feed.feed_id).order_by(CachedEvent.begin)
         c.events.update({e.to_ics_event() for e in q.all()})
 
         return c
 
     def feed_needs_updating(self, feed_name):
-        session = self.Session()
-        feed = session.query(CachedFeed).filter_by(feed_name=feed_name)
+        feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
         if feed.count() > 1:
             raise RuntimeError('feed_name is not unique')
         if feed.count() == 0:
@@ -204,17 +200,15 @@ class Cache:
         return False
 
     def print_content(self):
-        session = self.Session()
-
         print('Cache content\n'
               '-------------')
 
-        for feed_id, feed_name in session.query(CachedFeed.feed_id,
+        for feed_id, feed_name in self.session.query(CachedFeed.feed_id,
                                                 CachedFeed.feed_name):
             print(feed_id, feed_name)
-            q = session.query(CachedEvent.description,
-                              CachedEvent.name,
-                              CachedEvent.begin)
+            q = self.session.query(CachedEvent.description,
+                                   CachedEvent.name,
+                                   CachedEvent.begin)
             for description, name, begin in q.filter_by(event_feed_id=feed_id):
                 print(' '*4, description, '-', name, '-', begin)
 
