@@ -35,8 +35,8 @@ def feed(feed_name):
         return abort(404)
     c = f.generate_calendar()
     th = now()
-    past_events = {e for e in c.events if e.end < th and e.description}
-    upcoming_events = {e for e in c.events if e.end >= th and e.description}
+    past_events = {e for e in c.events if e.end < th and (e.description or e.name)}
+    upcoming_events = {e for e in c.events if e.end >= th and (e.description or e.name)}
     return render_template('main.html',
                            feeds=feeds,
                            feed_name=feed_name,
