@@ -128,13 +128,19 @@ class Cache:
         finally:
             self.session.close()
 
+    def feed_download_date(self, feed_name):
+        cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
+        if cached_feed.count() > 1:
+            raise RuntimeError('feed_name is not unique')
+        cached_feed = cached_feed.first()
+        return cached_feed.feed_last_download
+
     def update_feed_download_date(self, feed_name, download_date):
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
         if cached_feed.count() > 1:
             raise RuntimeError('feed_name is not unique')
         cached_feed = cached_feed.first()
         cached_feed.feed_last_download = download_date
-        self.session.commit()
 
     def save_events(self, download_date, feed_name, ics_url, events):
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
@@ -171,7 +177,6 @@ class Cache:
                 cached_event.location = event.location
                 cached_event.url = event.url
                 cached_event.transparent = event.transparent
-        self.session.commit()
 
     def get_events_from_source_url(self, ics_url):
         """

@@ -38,6 +38,7 @@ def feed(feed_name):
         return abort(404)
     with Cache() as cache:
         c = f.generate_calendar(cache)
+        download_date = cache.feed_download_date(feed_name)
     th = now()
     past_events = {e for e in c.events if e.end < th and (e.description or e.name)}
     upcoming_events = {e for e in c.events if e.end >= th and (e.description or e.name)}
@@ -45,6 +46,7 @@ def feed(feed_name):
                            feeds=feeds,
                            feed_name=feed_name,
                            feed_info=f,
+                           feed_download_date=download_date,
                            past_events=sorted(past_events, key=lambda e: e.begin),
                            upcoming_events=sorted(upcoming_events, key=lambda e: e.begin))
 
