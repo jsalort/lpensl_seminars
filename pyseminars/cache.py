@@ -11,7 +11,7 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Interval, Boolean
+from sqlalchemy import Column, Integer, Unicode, Interval, Boolean
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import ArrowType
@@ -42,7 +42,7 @@ class CachedFeed(Base):
 
     feed_id = Column(Integer, primary_key=True)
     feed_last_download = Column(ArrowType)  # last time downloaded from website
-    feed_name = Column(String(256))
+    feed_name = Column(Unicode(256, collation='utf8mb4_unicode_ci'))
 
 
 class CachedEvent(Base):
@@ -52,18 +52,18 @@ class CachedEvent(Base):
     event_id = Column(Integer, primary_key=True)
     event_last_download = Column(ArrowType)  # last time downloaded
     event_feed_id = Column(Integer)  # feed event belongs to
-    event_ics_source = Column(String(256))  # URL
+    event_ics_source = Column(Unicode(256, collation='utf8mb4_unicode_ci'))  # URL
 
     # ICS fields
-    name = Column(String(256))  # RFC5545 SUMMARY
+    name = Column(Unicode(256, collation='utf8mb4_unicode_ci'))  # RFC5545 SUMMARY
     begin = Column(ArrowType)
     end = Column(ArrowType)
     duration = Column(Interval)
-    uid = Column(String(256))
-    description = Column(String(1024))
+    uid = Column(Unicode(256, collation='utf8mb4_unicode_ci'))
+    description = Column(Unicode(1024, collation='utf8mb4_unicode_ci'))
     created = Column(ArrowType)
-    location = Column(String(256))
-    url = Column(String(512))
+    location = Column(Unicode(256, collation='utf8mb4_unicode_ci'))
+    url = Column(Unicode(512, collation='utf8mb4_unicode_ci'))
     transparent = Column(Boolean)
 
     def to_ics_event(self):
@@ -143,7 +143,7 @@ class Cache:
             else:
                 cached_event = cached_event.first()
                 cached_event.event_last_download = download_date
-                cached_event.event_feed_id = cached_feed['feed_id']
+                cached_event.event_feed_id = cached_feed.feed_id
                 cached_event.event_ics_source = ics_url
                 cached_event.name = event.name
                 cached_event.begin = event.begin
