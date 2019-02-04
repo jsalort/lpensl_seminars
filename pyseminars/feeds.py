@@ -60,6 +60,8 @@ class SeminarFeed:
                 else:
                     print('Using cached ics')
                 c.events.update(events)
+            # Update feed download date even if no event was changed
+            cache.update_feed_download_date(self.feed_name, now())
         else:
             print('Using cached calendar')
         return c
