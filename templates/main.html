@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Upcoming events</h3>
+<ul class="list-group">
+{% for e in upcoming_events %}
+    <li class="list-group-item">
+    {{ moment(e.begin).calendar() }} — <a href="{{ e.url }}">{{ e.description }}</a>
+    <p><small>{{ e.name }}</small></p>
+    </li>
+{% endfor %}
+</ul>
+<br />
+
+<h3>Past events</h3>
+<ul class="list-group">
+{% for e in past_events %}
+    <li class="list-group-item">
+    {{ moment(e.begin).calendar() }} — <a href="{{ e.url }}">{{ e.description }}</a>
+    <p><small>{{ e.name }}</small></p>
+    </li>
+{% endfor %}
+</ul>
+<br />
+
+{% endblock %}
