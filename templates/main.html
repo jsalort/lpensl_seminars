@@ -1,8 +1,17 @@
 {% extends "layout.html" %}
 {% block content %}
-<p><a href="{{ url_for('calendar', feed_name=feed_name) }}">S'abonner au calendrier (ics)</a></p>
+<h4>Infos</h4>
+<ul class="list-group">
+    <li class="list-group-item">
+    <a href="{{ url_for('calendar', feed_name=feed_name) }}">URL d'abonnement (à coller dans iCal)</a>
+    </li>
+    <li class="list-group-item">
+    <a href="{{ feed_info.feed_webpage }}">Page du séminaire</a>
+    </li>
+</ul>    
+</p>
 
-<h3>Upcoming events</h3>
+<h4>Upcoming events</h4>
 <ul class="list-group">
 {% for e in upcoming_events %}
     <li class="list-group-item">
@@ -13,7 +22,7 @@
 </ul>
 <br />
 
-<h3>Past events</h3>
+<h4>Past events</h4>
 <ul class="list-group">
 {% for e in past_events %}
     <li class="list-group-item">

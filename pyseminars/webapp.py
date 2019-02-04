@@ -40,6 +40,7 @@ def feed(feed_name):
     return render_template('main.html',
                            feeds=feeds,
                            feed_name=feed_name,
+                           feed_info=f,
                            past_events=sorted(past_events, key=lambda e: e.begin),
                            upcoming_events=sorted(upcoming_events, key=lambda e: e.begin))
 
