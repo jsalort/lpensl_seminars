@@ -136,11 +136,15 @@ class Cache:
         return cached_feed.feed_last_download
 
     def update_feed_download_date(self, feed_name, download_date):
+        """This method updates the cached download_date value of the specified feed.
+        If no such feed is present in cache at all, then nothing happens.
+        """
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
         if cached_feed.count() > 1:
             raise RuntimeError('feed_name is not unique')
         cached_feed = cached_feed.first()
-        cached_feed.feed_last_download = download_date
+        if cached_feed:
+            cached_feed.feed_last_download = download_date
 
     def save_events(self, download_date, feed_name, ics_url, events):
         cached_feed = self.session.query(CachedFeed).filter_by(feed_name=feed_name)
