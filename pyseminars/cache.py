@@ -115,18 +115,12 @@ class CachedEvent(Base):
 
 
 engine = create_engine(config["Database"]["dburl"], echo=False)
+Session = sessionmaker(bind=engine)
 
 
 class Cache:
-    def __init__(self):
-        if not engine.dialect.has_table(engine, "events"):
-            CachedEvent.metadata.create_all(engine)
-        if not engine.dialect.has_table(engine, "feeds"):
-            CachedFeed.metadata.create_all(engine)
-        self.Session = sessionmaker(bind=engine)
-
     def __enter__(self):
-        self.session = self.Session()
+        self.session = Session()
         return self
 
     def __exit__(self, *args, **kwargs):
