@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, Unicode, Interval, Boolean
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, exc
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import ArrowType
 
@@ -115,6 +115,27 @@ class CachedEvent(Base):
 
 
 engine = create_engine(config["Database"]["dburl"], echo=False)
+
+
+# D'après https://docs.sqlalchemy.org/en/13/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
+# les event handlers ci-dessous permettent d'invalider les connection pools qui ne sont pas du même processus
+# (nécessaire pour uwsgi qui fork le processus pour créer les workers)
+@event.listens_for(engine, "connect")
+def connect(dbapi_connection, connection_record):
+    connection_record.info["pid"] = os.getpid()
+
+
+@event.listens_for(engine, "checkout")
+def checkout(dbapi_connection, connection_record, connection_proxy):
+    pid = os.getpid()
+    if connection_record.info["pid"] != pid:
+        connection_record.connection = connection_proxy.connection = None
+        raise exc.DisconnectionError(
+            "Connection record belongs to pid %s, "
+            "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+        )
+
+
 Session = sessionmaker(bind=engine)
 
 
@@ -164,11 +185,11 @@ class Cache:
             cached_feed = cached_feed.first()
             cached_feed.feed_last_download = download_date
 
-        for event in events:
-            cached_event = self.session.query(CachedEvent).filter_by(uid=event.uid)
+        for ev in events:
+            cached_event = self.session.query(CachedEvent).filter_by(uid=ev.uid)
             if cached_event.count() == 0:
                 cached_event = CachedEvent.from_ics_event(
-                    download_date, cached_feed.feed_id, ics_url, event
+                    download_date, cached_feed.feed_id, ics_url, ev
                 )
                 self.session.add(cached_event)
             elif cached_event.count() > 1:
@@ -178,14 +199,14 @@ class Cache:
                 cached_event.event_last_download = download_date
                 cached_event.event_feed_id = cached_feed.feed_id
                 cached_event.event_ics_source = ics_url
-                cached_event.name = event.name
-                cached_event.begin = event.begin
-                cached_event.end = event.end
-                cached_event.description = event.description
-                cached_event.created = event.created
-                cached_event.location = event.location
-                cached_event.url = event.url
-                cached_event.transparent = event.transparent
+                cached_event.name = ev.name
+                cached_event.begin = ev.begin
+                cached_event.end = ev.end
+                cached_event.description = ev.description
+                cached_event.created = ev.created
+                cached_event.location = ev.location
+                cached_event.url = ev.url
+                cached_event.transparent = ev.transparent
 
     def get_events_from_source_url(self, ics_url):
         """
